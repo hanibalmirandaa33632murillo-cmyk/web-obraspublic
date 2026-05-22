@@ -1,6 +1,5 @@
 # Sistema de Gestion de Obras Publicas — Temascaltepec
 
-**Autores:** Gonzalez Casiano Uriel / Maldonado Mejia Marco Tulio  
 **Materia:** Bases de Datos
 
 ---
