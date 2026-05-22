@@ -1,12 +1,6 @@
 """
-Conexion a PostgreSQL usando SQLAlchemy.
-La URL de conexion se lee desde la variable de entorno DATABASE_URL.
-
-Formato esperado:
-  postgresql://usuario:password@host:puerto/nombre_db
-
-En Railway: se configura automaticamente en las variables de entorno del proyecto.
-En local (Docker): usa el valor del archivo .env
+Configuracion de la conexion a PostgreSQL via SQLAlchemy.
+Lee DATABASE_URL del entorno (Railway la inyecta automaticamente).
 """
 
 import os
@@ -15,24 +9,32 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
-load_dotenv()  # carga el archivo .env en desarrollo local
+load_dotenv()
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://obras_user:obras_pass@localhost:5432/obras_publicas"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-# SQLAlchemy necesita "postgresql://" no "postgres://" (Railway a veces da el segundo)
+# Railway a veces da URLs que empiezan con "postgres://" (viejo formato)
+# SQLAlchemy necesita "postgresql://"
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(DATABASE_URL)
+if not DATABASE_URL:
+    print("[WARNING] DATABASE_URL no esta configurada. La BD no funcionara.")
+    DATABASE_URL = "postgresql://user:pass@localhost/obras"
+
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,      # verifica la conexion antes de usarla
+    pool_recycle=300,        # recicla conexiones cada 5 minutos
+    connect_args={}
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 Base = declarative_base()
 
 
 def get_db():
-    """Dependencia de FastAPI: abre y cierra la sesion por request."""
     db = SessionLocal()
     try:
         yield db
